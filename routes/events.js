@@ -10,7 +10,7 @@ var connection = mysql.createConnection({
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    connection.query('SELECT * FROM events', function (error, results, fields) {
+    connection.query('SELECT * FROM events INNER JOIN users on events.created_by = users.id', function (error, results, fields) {
         res.json(results);
     });
 });

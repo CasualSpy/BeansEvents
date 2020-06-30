@@ -4,10 +4,13 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
+const session = require('express-session');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var eventsRouter = require('./routes/events')
+
+const TWO_HOURS = 7200000;
 
 var app = express();
 
@@ -22,10 +25,21 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false  }));
 app.use(bodyParser.json());
+app.use(session({
+    secret: 'someverysecretkey',
+    resave: false,
+    saveUninitialized: false,
+    name: 'sid',
+    cookie: {
+        maxAge: TWO_HOURS,
+        sameSite: true,
+        secure: false
+    }
+}))
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/events', eventsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/events', eventsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
