@@ -6,12 +6,17 @@ var logger = require('morgan');
 var bodyParser = require('body-parser');
 const session = require('express-session');
 
+var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var eventsRouter = require('./routes/events')
 
 const TWO_HOURS = 7200000;
 
 var app = express();
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -32,8 +37,9 @@ app.use(session({
     }
 }))
 
-app.use('/users', usersRouter);
-app.use('/events', eventsRouter);
+app.use('/', indexRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/events', eventsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
