@@ -141,6 +141,7 @@ router.post('/login', [
 
 router.post('/logout', function(req, res) {
     req.session.destroy(err => {
+        res.clearCookie('sid');
         if (err)
             res.status(401).json({success: false, errors: [{
                 "value": "",
@@ -150,7 +151,6 @@ router.post('/logout', function(req, res) {
             }]});
         else
             res.status(201).json({success: true});
-        res.clearCookie('sid');
     })
 })
 
