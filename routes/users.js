@@ -1,5 +1,5 @@
 var express = require('express');
-const { check, validationResult } = require('express-validator');
+const { body, cookie, validationResult } = require('express-validator');
 var router = express.Router();
 var mysql = require('mysql');
 var shajs = require('sha.js');
@@ -12,16 +12,16 @@ var connection = mysql.createConnection({
 });
 
 router.post('/register', [
-    check('email').trim()
+    body('email').trim()
       .notEmpty().withMessage("Email can not be empty.")
       .isEmail().withMessage("Email must be a valid email address.")
       .normalizeEmail()
       .escape(),
-    check('username').trim()
+    body('username').trim()
       .notEmpty().withMessage('Username can not be empty.')
       .not().matches(/[^\w-]+/g).withMessage("Username can contain only letters, numbers, '-' and '_'.")
       .escape(),
-    check('password').trim()
+    body('password').trim()
       .isLength({min: 8}).withMessage('Password must be longer than 8 characters.')
       .matches(/[$-/:-?{-~!"^_`\[\]]/).withMessage('Password must contain a symbol.')
       .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter.')
@@ -89,13 +89,13 @@ router.post('/register', [
 })
 
 router.post('/login', [
-    check('email').trim()
+    body('email').trim()
       .notEmpty().withMessage("Email/Username can not be empty."),
-    check('email').if(check('email').isEmail())
+    body('email').if(body('email').isEmail())
       .normalizeEmail(),
-    check('email')
+    body('email')
       .escape(),
-    check('password').trim()
+    body('password').trim()
       .notEmpty().withMessage("Password can not be empty.")
       .escape()
 ], function(req, res) {
@@ -142,14 +142,15 @@ router.post('/login', [
 router.post('/logout', function(req, res) {
     req.session.destroy(err => {
         if (err)
-            return res.status(401).json({success: false, errors: [{
+            res.status(401).json({success: false, errors: [{
                 "value": "",
                 "msg": "No session found.",
                 "param": "",
                 "location": "cookies"
             }]});
+        else
+            res.status(201).json({success: true});
         res.clearCookie('sid');
-        res.status(201).json({success: true});
     })
 })
 
