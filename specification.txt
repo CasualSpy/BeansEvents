@@ -1,0 +1,15 @@
+Events:
+- Create
+- Update (Edit/Cancel)
+- Can be public or private
+- Public events can be viewed by anyone
+- Private events can only be viewed after being invited
+- RSVP
+
+Users:
+- Create
+- Confirmation before posting anything
+- Login/Logout
+- Add/Remove friend
+- Edit username, email, password, fullname
+- Public info page w/ public events && private events you're both going to
