@@ -5,6 +5,7 @@ var mysql = require('mysql');
 var shajs = require('sha.js');
 const crypto = require('crypto');
 var nodemailer = require('nodemailer');
+var uuid = require('uuid');
 
 var connection = mysql.createConnection({
     host: 'localhost',
@@ -23,12 +24,12 @@ var transporter = nodemailer.createTransport({
 
 router.post('/register', [
     body('email').trim()
-        .notEmpty().withMessage("Email can not be empty.")
+        .notEmpty().withMessage("Email cannot be empty.")
         .isEmail().withMessage("Email must be a valid email address.")
         .normalizeEmail()
         .escape(),
     body('username').trim()
-        .notEmpty().withMessage('Username can not be empty.')
+        .notEmpty().withMessage('Username cannot be empty.')
         .not().matches(/[^\w-]+/g).withMessage("Username can contain only letters, numbers, '-' and '_'.")
         .escape(),
     body('password').trim()
@@ -73,18 +74,22 @@ router.post('/register', [
                 //Hash password
                 const salt = makesalt(16);
                 const hash = shajs('sha256').update(password + salt).digest('hex');
+                const token = uuid.v4();
+                console.log(token);
 
-                connection.query(`INSERT INTO users (username,${fullname ? " fullname," : ""} email, password_hash, password_salt) VALUES ("${username}",${fullname ? `"${fullname}", ` : ""} "${email}", "${hash}", "${salt}")`, function (error, results, fields) {
+                connection.query(`INSERT INTO users (username,${fullname ? " fullname," : ""} email, password_hash, password_salt, verif_token) VALUES ("${username}",${fullname ? `"${fullname}", ` : ""} "${email}", "${hash}", "${salt}", "${token}")`, function (error, results, fields) {
                     if (!error) {
                         req.session.userId = results.insertId;
+
                         // Send confirmation email
-
-
                         var mailOptions = {
-                            from: 'youremail@gmail.com',
+                            from: transporter.auth.user,
                             to: email,
                             subject: 'Email Confirmation',
-                            html: '<h1>ASS</h1>'
+                            html: `<div>
+                                        <h1>Please confirm your email address by clicking on the button below</h1>
+                                        https://www.google.com
+                                    </div>`
                         };
 
                         transporter.sendMail(mailOptions, function (error, info) {
@@ -122,13 +127,13 @@ router.post('/register', [
 
 router.post('/login', [
     body('email').trim()
-        .notEmpty().withMessage("Email/Username can not be empty."),
+        .notEmpty().withMessage("Email/Username cannot be empty."),
     body('email').if(body('email').isEmail())
         .normalizeEmail(),
     body('email')
         .escape(),
     body('password').trim()
-        .notEmpty().withMessage("Password can not be empty.")
+        .notEmpty().withMessage("Password cannot be empty.")
         .escape()
 ], function (req, res) {
     const errors = validationResult(req);
@@ -172,6 +177,14 @@ router.post('/login', [
                 });
             }
         }
+        else res.status(500).json({
+            success: false, errors: [{
+                "value": "",
+                "msg": "Unknown server error.",
+                "param": "",
+                "location": ""
+            }]
+        })
     });
 })
 
@@ -192,8 +205,71 @@ router.post('/logout', function (req, res) {
     })
 })
 
-router.post('/confirmation', function (req, res) {
+router.post('/confirmation', [
+    body("email").trim()
+        .notEmpty().withMessage("Email cannot be empty.")
+        .isEmail().withMessage("Email must be a valid email address.")
+        .normalizeEmail()
+        .escape(),
+    body("token").trim()
+        .notEmpty().withMessage("Token cannot be empty.")
+        .escape()
+], function (req, res) {
+    const errors = validationResult(req);
 
+    if (!errors.isEmpty()) {
+        return res.status(422).json({
+            success: false, errors: errors.array()
+
+        });
+    }
+
+    const { email, token } = req.body;
+    connection.query(`SELECT valid_token FROM users WHERE email = "${email}"`, function (error, results) {
+        if (!error) {
+            if (results.length > 0) {
+                if (token === results[0]) {
+                    connection.query(`UPDATE users SET active = 1 WHERE email = "${email}"`, function (error, results) {
+                        if (!error)
+                            res.status(201).json({ success: true });
+                        else res.status(500).json({
+                            success: false, errors: [{
+                                "value": "",
+                                "msg": "Unknown server error.",
+                                "param": "",
+                                "location": ""
+                            }]
+                        })
+                    });
+                }
+                else res.status(401).json({
+                    success: false, errors: [{
+                        "value": token,
+                        "msg": "Invalid token.",
+                        "param": "token",
+                        "location": "body"
+                    }]
+                })
+            }
+            else res.status(401).json({
+                success: false, errors: [{
+                    "value": email,
+                    "msg": "User not found.",
+                    "param": "email",
+                    "location": "body"
+                }]
+            })
+
+        }
+        else res.status(500).json({
+            success: false, errors: [{
+                "value": "",
+                "msg": "Unknown server error.",
+                "param": "",
+                "location": ""
+            }]
+        })
+    });
 })
 
 function makesalt(length) {
