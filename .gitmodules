@@ -1,0 +1,3 @@
+[submodule "BeansClient"]
+	path = BeansClient
+	url = git@github.com:CasualSpy/BeansEventsClient.git
