@@ -11,6 +11,7 @@ const {check, validationResult} = require('express-validator');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
+    const user = req.session.userId
     connection.query('SELECT e.title, e.location, e.description, e.start_time, e.end_time, e.status, u.username host FROM events e INNER JOIN users u on e.created_by = u.id ORDER BY e.date_created, e.start_time', function (error, results, fields) {
         if (!error){
             res.json(results);
