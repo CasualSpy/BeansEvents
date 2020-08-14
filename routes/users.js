@@ -66,7 +66,7 @@ router.post('/register', [
                             "param": `${emailTaken ? "email" : ""}${emailTaken && usernameTaken ? ", " : ""}${usernameTaken ? "username" : ""}`,
                             "location": "body"
                         }]
-                    })
+                    });
                 }
             }
             //Available
@@ -83,7 +83,7 @@ router.post('/register', [
 
                         // Send confirmation email
                         var mailOptions = {
-                            from: transporter.auth.user,
+                            from: 'beansplanner@gmail.com',
                             to: email,
                             subject: 'Email Confirmation',
                             html: `<div>
@@ -220,7 +220,6 @@ router.post('/confirmation', [
     if (!errors.isEmpty()) {
         return res.status(422).json({
             success: false, errors: errors.array()
-
         });
     }
 
