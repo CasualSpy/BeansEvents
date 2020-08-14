@@ -34,7 +34,7 @@ router.post('/register', [
         .escape(),
     body('password').trim()
         .isLength({ min: 8 }).withMessage('Password must be longer than 8 characters.')
-        .matches(/[$-/:-?{-~!"^_`\[\]]/).withMessage('Password must contain a symbol.')
+        .matches(/[$-/:-?{}-~!"^_`\[\]]/).withMessage('Password must contain a symbol.')
         .matches(/[A-Z]/).withMessage('Password must contain an uppercase letter.')
         .matches(/[a-z]/).withMessage('Password must contain a lowercase letter.')
         .matches(/\d/).withMessage('Password must contain a digit.')
