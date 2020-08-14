@@ -28,7 +28,7 @@ CREATE TABLE `events` (
   `location` varchar(255) DEFAULT NULL,
   `description` text,
   `created_by` int(11) NOT NULL,
-  `is_private` tinyint(1) DEFAULT NULL,
+  `is_private` tinyint(1) DEFAULT '0',
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `end_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('pending','cancelled','confirmed') DEFAULT 'pending',
@@ -118,4 +118,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-08-14 17:00:46
+-- Dump completed on 2020-08-14 17:48:37
