@@ -81,13 +81,14 @@ router.post('/register', [
                         req.session.userId = results.insertId;
 
                         // Send confirmation email
+                        // TODO : Put a real URL
                         var mailOptions = {
                             from: 'beansplanner@gmail.com',
                             to: email,
                             subject: 'Email Confirmation',
                             html: `<div>
                                         <h1>Please confirm your email address by clicking on the button below</h1>
-                                        https://www.google.com
+                                        http://localhost:3000/email_confirmation/${token}
                                     </div>`
                         };
 
