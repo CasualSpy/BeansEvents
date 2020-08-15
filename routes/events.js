@@ -7,7 +7,7 @@ var connection = mysql.createConnection({
     password: 'supersecretpassword',
     database: 'event_planner'
 })
-const {check, validationResult} = require('express-validator');
+const {body, validationResult} = require('express-validator');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -29,24 +29,38 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/create', [
-    check('title').trim()
+    body('title').trim()
+      .notEmpty(),
+    body('created_by').trim()
+      .notEmpty(),
+    body('start_time').trim()
+      .notEmpty(),
+    body('end_time').trim()
       .notEmpty()
 ], function(req, res) {
-    const {title, location, created_by, description, start_time, end_time, is_private} = req.body;
-    if (title && created_by && start_time && end_time) {
-        connection.query(`INSERT INTO events (title, created_by, start_time, end_time${location ? ", location" : ""}${description ? ", description" : ""}${is_private ? ", is_private" : ""}) VALUES ("${title}", ${created_by}, "${start_time}", "${end_time}"${location ? `, "${location}"` : ""}${description ? `, "${description}"` : ""}${is_private ? ", TRUE" : ""})`, function(error, results, fields) {
-            if (!error) {
-                console.log(results);
-                res.json({success: true})
-            } else {
-                console.log(error);
-               res.json({success: false, errors: [{}]})
-            }
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).json({
+            success: false, errors: errors.array()
+
         });
     }
-    else {
-        res.json({success: false, errors: [{}]})
-    }
+    const {title, location, created_by, description, start_time, end_time, is_private} = req.body;
+    connection.query(`INSERT INTO events (title, created_by, start_time, end_time${location ? ", location" : ""}${description ? ", description" : ""}${is_private ? ", is_private" : ""}) VALUES ("${title}", ${created_by}, "${start_time}", "${end_time}"${location ? `, "${location}"` : ""}${description ? `, "${description}"` : ""}${is_private ? ", TRUE" : ""})`, function(error, results, fields) {
+        if (!error) {
+            console.log(results);
+            res.status().json({success: true})
+        } else {
+            console.log(error);
+            res.status(500).json({success: false, errors: [{
+                "value": "",
+                "msg":  "Unknown server error.",
+                "param": "",
+                "location": ""
+            }]})
+        }
+    });
 });
 
 module.exports = router;

@@ -75,7 +75,6 @@ router.post('/register', [
                 const salt = makesalt(16);
                 const hash = shajs('sha256').update(password + salt).digest('hex');
                 const token = uuid.v4();
-                console.log(token);
 
                 connection.query(`INSERT INTO users (username,${fullname ? " fullname," : ""} email, password_hash, password_salt, verif_token) VALUES ("${username}",${fullname ? `"${fullname}", ` : ""} "${email}", "${hash}", "${salt}", "${token}")`, function (error, results, fields) {
                     if (!error) {
@@ -127,10 +126,7 @@ router.post('/register', [
 
 router.post('/login', [
     body('emailusername').trim()
-        .notEmpty().withMessage("Email/Username cannot be empty."),
-    body('emailusername').if(body('email').isEmail())
-        .normalizeEmail(),
-    body('emailusername')
+        .notEmpty().withMessage("Email/Username cannot be empty.")
         .escape(),
     body('password').trim()
         .notEmpty().withMessage("Password cannot be empty.")
@@ -146,7 +142,8 @@ router.post('/login', [
     }
 
     const { emailusername, password } = req.body;
-    connection.query(`SELECT * FROM users WHERE email = "${emailusername}" OR username = "${emailusername}"`, (error, results, fields) => {
+    const query =`SELECT * FROM users WHERE email = "${emailusername}" OR username = "${emailusername}"`
+    connection.query(query, (error, results, fields) => {
         if (!error) {
             if (results.length > 0) {
                 const user = results[0];
@@ -206,11 +203,6 @@ router.post('/logout', function (req, res) {
 })
 
 router.post('/confirmation', [
-    body("email").trim()
-        .notEmpty().withMessage("Email cannot be empty.")
-        .isEmail().withMessage("Email must be a valid email address.")
-        .normalizeEmail()
-        .escape(),
     body("token").trim()
         .notEmpty().withMessage("Token cannot be empty.")
         .escape()
@@ -223,43 +215,10 @@ router.post('/confirmation', [
         });
     }
 
-    const { email, token } = req.body;
-    connection.query(`SELECT valid_token FROM users WHERE email = "${email}"`, function (error, results) {
-        if (!error) {
-            if (results.length > 0) {
-                if (token === results[0]) {
-                    connection.query(`UPDATE users SET active = 1 WHERE email = "${email}"`, function (error, results) {
-                        if (!error)
-                            res.status(201).json({ success: true });
-                        else res.status(500).json({
-                            success: false, errors: [{
-                                "value": "",
-                                "msg": "Unknown server error.",
-                                "param": "",
-                                "location": ""
-                            }]
-                        })
-                    });
-                }
-                else res.status(401).json({
-                    success: false, errors: [{
-                        "value": token,
-                        "msg": "Invalid token.",
-                        "param": "token",
-                        "location": "body"
-                    }]
-                })
-            }
-            else res.status(401).json({
-                success: false, errors: [{
-                    "value": email,
-                    "msg": "User not found.",
-                    "param": "email",
-                    "location": "body"
-                }]
-            })
-
-        }
+    const { token } = req.body;
+    connection.query(`UPDATE users SET active = 1 WHERE verif_token = "${token}"`, function (error, results) {
+        if (!error)
+            res.status(201).json({ success: true });
         else res.status(500).json({
             success: false, errors: [{
                 "value": "",
@@ -269,6 +228,42 @@ router.post('/confirmation', [
             }]
         })
     });
+});
+
+router.post('/resend_email', function (req, res) {
+    const user = req.session.userId;
+    connection.query(`SELECT email FROM users WHERE id = ${user}`, function (error, results) {
+        if (!error) {
+            const email = results[0].email;
+            var mailOptions = {
+                from: 'beansplanner@gmail.com',
+                to: email,
+                subject: 'Email Confirmation',
+                html: `<div>
+                            <h1>Please confirm your email address by clicking on the button below</h1>
+                            https://www.google.com
+                        </div>`
+            };
+
+            transporter.sendMail(mailOptions, function (error, info) {
+                if (error) {
+                    console.log(error);
+                } else {
+                    console.log('Email sent: ' + info.response);
+                }
+            });
+            res.status(201).json({success: true})
+        } else {
+            res.status(500).json({
+                success: false, errors: [{
+                    "value": "",
+                    "msg": "Unknown server error.",
+                    "param": "",
+                    "location": ""
+                }]
+            })
+        }
+    })
 })
 
 function makesalt(length) {
