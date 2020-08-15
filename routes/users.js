@@ -126,11 +126,11 @@ router.post('/register', [
 })
 
 router.post('/login', [
-    body('email').trim()
+    body('emailusername').trim()
         .notEmpty().withMessage("Email/Username cannot be empty."),
-    body('email').if(body('email').isEmail())
+    body('emailusername').if(body('email').isEmail())
         .normalizeEmail(),
-    body('email')
+    body('emailusername')
         .escape(),
     body('password').trim()
         .notEmpty().withMessage("Password cannot be empty.")
@@ -145,8 +145,8 @@ router.post('/login', [
         });
     }
 
-    const { email, password } = req.body;
-    connection.query(`SELECT * FROM users WHERE email = "${email}" OR username = "${email}"`, (error, results, fields) => {
+    const { emailusername, password } = req.body;
+    connection.query(`SELECT * FROM users WHERE email = "${emailusername}" OR username = "${emailusername}"`, (error, results, fields) => {
         if (!error) {
             if (results.length > 0) {
                 const user = results[0];
@@ -160,7 +160,7 @@ router.post('/login', [
                     res.status(403).json({
                         success: false, errors: [{
                             "value": "",
-                            "msg": "Invalid username or password.",
+                            "msg": "Invalid credentials",
                             "param": "username,password",
                             "location": "body"
                         }]
@@ -170,7 +170,7 @@ router.post('/login', [
                 res.status(403).json({
                     success: false, errors: [{
                         "value": "",
-                        "msg": "Invalid username or password.",
+                        "msg": "Invalid credentials",
                         "param": "username,password",
                         "location": "body"
                     }]
