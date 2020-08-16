@@ -81,7 +81,6 @@ router.post('/register', [
                         req.session.userId = results.insertId;
 
                         // Send confirmation email
-                        // TODO : Put a real URL
                         var mailOptions = {
                             from: 'beansplanner@gmail.com',
                             to: email,
@@ -233,16 +232,17 @@ router.post('/confirmation', [
 
 router.post('/resend_email', function (req, res) {
     const user = req.session.userId;
-    connection.query(`SELECT email FROM users WHERE id = ${user}`, function (error, results) {
+    connection.query(`SELECT email, verif_token FROM users WHERE id = ${user}`, function (error, results) {
         if (!error) {
             const email = results[0].email;
+            const token = results[0].verif_token;
             var mailOptions = {
                 from: 'beansplanner@gmail.com',
                 to: email,
                 subject: 'Email Confirmation',
                 html: `<div>
                             <h1>Please confirm your email address by clicking on the button below</h1>
-                            https://www.google.com
+                            http://localhost:3000/email_confirmation/${token}
                         </div>`
             };
 
@@ -265,6 +265,40 @@ router.post('/resend_email', function (req, res) {
             })
         }
     })
+})
+
+router.get('/user/:username', function (req, res) {
+    const username = req.params.username;
+    if (username) {
+        connection.query(
+            `SELECT u.username, u.fullname, e.id AS event_id, e.title, e.location, e.start_time FROM events e LEFT JOIN responses r ON e.id = r.event_id RIGHT JOIN users u ON e.created_by = u.id OR r.user_id = u.id WHERE u.username = "${username}";`, function (error, results) {
+                if (!error){
+                    if (results.length > 0) {
+                        const {username, fullname} = results[0];
+                        const events = results.map(r => ({id: r.event_id, title: r.title, location: r.location, start_time: r.start_time}));
+                        res.status(200).json({success:true, username, fullname, events: (events[0].id ? events : [])});
+                    }
+                    else res.status(404).json({
+                        success: false, errors: [{
+                            "value": username,
+                            "msg": "User not found.",
+                            "param": "username",
+                            "location": "params"
+                        }]
+                    })
+                }
+                else {
+                    res.status(500).json({
+                        success: false, errors: [{
+                            "value": "",
+                            "msg": "Unknown server error.",
+                            "param": "",
+                            "location": ""
+                        }]
+                    })
+                }
+            });
+    }
 })
 
 function makesalt(length) {
