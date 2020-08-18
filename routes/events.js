@@ -79,7 +79,8 @@ router.get('/going', function (req, res) {
             for (invitation in temp.all()){
                 const {event_id, title, location, start_time, invitation_id, sender_id, sender_username, sender_fullname} = temp.all()[invitation].items[0]
                 const friends = temp.all()[invitation].items.map(item => ({id: item.friend_id, username: item.friend_username, fullname: item.friend_fullname}))
-                ret.push({event_id, title, location, start_time, invitation_id, sender_id, sender_username, sender_fullname, friends})
+
+                ret.push({event_id, title, location, start_time, invitation_id, sender_id, sender_username, sender_fullname, friends: friends[0].id ? friends : []})
             }
 
             res.status(200).json(ret)
