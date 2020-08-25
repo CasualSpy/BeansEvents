@@ -315,6 +315,8 @@ router.get('/details', function (req, res) {
     if (user) {
         connection.query(`SELECT username, fullname FROM users WHERE id = ${user}`, function (error, results) {
             if (!error){
+                const { username, fullname } = results[0];
+                res.status(200).json({success:true, username, fullname});
             }
             else {
                 res.status(500).json({
