@@ -312,10 +312,13 @@ router.get('/user/:username', async function (req, res) {
 router.get('/details', async function (req, res) {
     const user = req.session.userId;
     if (user) {
-        const results = await query(`SELECT username, fullname FROM users WHERE id = ${user}`)
-        if (!error){
+        try {
+            const results = await query(`SELECT username, fullname FROM users WHERE id = ${user}`);
+                const { username, fullname } = results[0];
+                res.status(200).json({success:true, username, fullname});
         }
-        else {
+        catch (error) {
+            console.log(error);
             res.status(500).json({
                 success: false, errors: [{
                     "value": "",
