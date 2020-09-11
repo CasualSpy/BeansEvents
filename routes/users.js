@@ -1,5 +1,5 @@
 var express = require('express');
-const { body, cookie, validationResult } = require('express-validator');
+const { body, cookie, validationResult, param} = require('express-validator');
 var router = express.Router();
 var query = require('./mysql-helper');
 var shajs = require('sha.js');
@@ -276,36 +276,47 @@ router.post('/resend_email', async function (req, res) {
     }]})
 })
 
-router.get('/user/:username', async function (req, res) {
+router.get('/user/:username', [
+    param('username').trim()
+    .notEmpty().withMessage("Username cannot be empty.")
+    .escape()
+], async function (req, res) {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(422).json({
+            success: false, errors: errors.array()
+
+        });
+    }
+
     const username = req.params.username;
-    if (username) {
-        try {
-            const results = await query(`SELECT u.username, u.fullname, r.id AS event_id, r.title, r.location, r.start_time FROM users u LEFT JOIN (SELECT e.id, e.title, e.location, e.start_time, e.is_private, r.user_id FROM events e INNER JOIN responses r ON r.event_id = e.id) r ON r.user_id = u.id WHERE u.username = "${username}" AND (r.is_private = FALSE OR r.is_private IS NULL);`);
-            if (results.length > 0) {
-                const {username, fullname} = results[0];
-                const events = results.map(r => ({id: r.event_id, title: r.title, location: r.location, start_time: r.start_time}));
-                res.status(200).json({success:true, username, fullname, events: (events[0].id ? events : [])});
-            }
-            else res.status(404).json({
-                success: false, errors: [{
-                    "value": username,
-                    "msg": "User not found.",
-                    "param": "username",
-                    "location": "params"
-                }]
-            })
+    try {
+        const results = await query(`SELECT u.username, u.fullname, r.id AS event_id, r.title, r.location, r.start_time FROM users u LEFT JOIN (SELECT e.id, e.title, e.location, e.start_time, e.is_private, r.user_id FROM events e INNER JOIN responses r ON r.event_id = e.id) r ON r.user_id = u.id WHERE u.username = "${username}" AND (r.is_private = FALSE OR r.is_private IS NULL);`);
+        if (results.length > 0) {
+            const {username, fullname} = results[0];
+            const events = results.map(r => ({id: r.event_id, title: r.title, location: r.location, start_time: r.start_time}));
+            res.status(200).json({success:true, username, fullname, events: (events[0].id ? events : [])});
         }
-        catch (error) {
-            console.log(error);
-            res.status(500).json({
-                success: false, errors: [{
-                    "value": "",
-                    "msg": "Unknown server error.",
-                    "param": "",
-                    "location": ""
-                }]
-            })
-        }
+        else res.status(404).json({
+            success: false, errors: [{
+                "value": username,
+                "msg": "User not found.",
+                "param": "username",
+                "location": "params"
+            }]
+        })
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false, errors: [{
+                "value": "",
+                "msg": "Unknown server error.",
+                "param": "",
+                "location": ""
+            }]
+        })
     }
 })
 
