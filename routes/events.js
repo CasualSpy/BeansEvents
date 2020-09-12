@@ -152,10 +152,26 @@ router.get('/event/:event_id', [
     const user = req.session.userId;
     if (user) {
         try {
-            const eventInfo = await query(`SELECT e.title, e.location, e.description, c.username created_by, e.start_time, e.end_time, e.status, COUNT(r.id) people_going FROM events e INNER JOIN users c ON e.created_by = c.id INNER JOIN responses r ON e.id = r.event_id LEFT JOIN invitations i ON e.id = i.event_id AND i.receiver_id = ${user} WHERE e.id = ${event_id} AND (e.is_private = FALSE OR i.id IS NOT NULL) GROUP BY e.id`)
+            const queryStr = `SELECT e.title, e.location, e.description, c.username created_by, e.start_time, e.end_time, e.status, i.id invitation, r.id response, g.count people_going FROM events e INNER JOIN (SELECT COUNT(r.id) count, r.event_id FROM responses r WHERE r.answer = 'going' GROUP BY r.event_id) g ON e.id = g.event_id INNER JOIN users c ON e.created_by = c.id LEFT JOIN responses r ON e.id = r.event_id LEFT JOIN invitations i ON e.id = i.event_id WHERE e.id = ${event_id} AND (e.is_private = FALSE OR i.receiver_id = ${user} OR e.created_by = ${user} OR r.answer = 'going' AND r.user_id = ${user})`;
+            const eventInfo = await query(queryStr)
             const friendsInfo = await query(`SELECT u.username, u.fullname FROM users u INNER JOIN friends f ON u.id = f.user2_id INNER JOIN responses r ON r.user_id = u.id WHERE r.event_id = ${event_id} AND r.answer = "going" AND f.user1_id = ${user}`)
-            const {title, location, description, created_by, start_time, end_time, status, people_going} = eventInfo[0];
-            res.status(200).json({title, location, description, created_by, start_time, end_time, status, people_going, friends_going: friendsInfo.map(friend => ({username: friend.username, fullname: friend.fullname}))})
+            if (eventInfo.length > 0) {
+                console.log(eventInfo)
+                const {title, location, description, created_by, start_time, end_time, status, people_going} = eventInfo[0];
+                res.status(200).json({title, location, description, created_by, start_time, end_time, status, people_going, friends_going: friendsInfo.map(friend => ({username: friend.username, fullname: friend.fullname}))})
+            }
+            else {
+                res.status(404).json({
+                    success:false, errors: [
+                        {
+                            "value": event_id,
+                            "msg": "Event not found.",
+                            "param": "event_id",
+                            "location": "params"
+                        }
+                    ]
+                })
+            }
         }
         catch (error) {
             console.log(error);
