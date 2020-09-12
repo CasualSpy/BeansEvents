@@ -34,53 +34,66 @@ router.get('/', async function (req, res, next) {
 
 router.post('/create', [
     body('title').trim()
-        .notEmpty(),
-    body('created_by').trim()
-        .notEmpty(),
+        .notEmpty()
+        .escape(),
     body('start_time').trim()
-        .notEmpty(),
+        .notEmpty()
+        .escape(),
     body('end_time').trim()
         .notEmpty()
+        .escape()
 ], async function (req, res) {
-    const errors = validationResult(req);
+    const user = req.session.userId;
+    if (user) {
+        const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-        console.log(errors.array());
-        return res.status(422).json({
-            success: false, errors: errors.array()
+        if (!errors.isEmpty()) {
+            console.log(errors.array());
+            return res.status(422).json({
+                success: false, errors: errors.array()
 
-        });
+            });
+        }
+        const { title, location, description, start_time, end_time, is_private } = req.body;
+        try {
+            await query(
+                `INSERT INTO events (
+                    title, 
+                    created_by, 
+                    start_time, 
+                    end_time
+                    ${location ? ", location" : ""}
+                    ${description ? ", description" : ""}
+                    ${is_private ? ", is_private" : ""}
+                ) VALUES (
+                    ?, 
+                    ?, 
+                    STR_TO_DATE(?, '%Y-%m-%d %T'),
+                    STR_TO_DATE(?, '%Y-%m-%d %T')
+                    ${location ? `, ?` : ""}
+                    ${description ? `, ?` : ""}
+                    ${is_private ? ", TRUE" : ""}
+                );`, [title, user, start_time, end_time, location, description, is_private]);
+            res.status().json({ success: true })
+        }
+        catch (error) {
+            console.log(error);
+            res.status(500).json({
+                success: false, errors: [{
+                    "value": "",
+                    "msg": "Unknown server error.",
+                    "param": "",
+                    "location": ""
+                }]
+            })
+        }
     }
-    const { title, location, created_by, description, start_time, end_time, is_private } = req.body;
-    try {
-        await query(`INSERT INTO events (
-            title, 
-            created_by, 
-            start_time, 
-            end_time
-            ${location ? ", location" : ""}
-            ${description ? ", description" : ""}
-            ${is_private ? ", is_private" : ""}
-            ) VALUES (
-                ?, 
-                ?, 
-                STR_TO_DATE(?, '%Y-%m-%d %T'),
-                STR_TO_DATE(?, '%Y-%m-%d %T')
-                ${location ? `, ?` : ""}
-                ${description ? `, ?` : ""}
-                ${is_private ? ", TRUE" : ""}
-            );`, [ title, created_by, start_time, end_time, location, description, is_private ]);
-        res.status().json({ success: true })
-    }
-    catch (error) {
-        console.log(error);
-        res.status(500).json({
-            success: false, errors: [{
-                "value": "",
-                "msg": "Unknown server error.",
-                "param": "",
-                "location": ""
-            }]
+    else {
+        res.status(401).json({
+            "value": "",
+            "msg": "User is not logged in.",
+            "param": "",
+            "location": ""
         })
     }
 });
@@ -178,12 +191,12 @@ router.get('/event/:event_id', [
             const friendsInfo = await query(`SELECT u.username, u.fullname FROM users u INNER JOIN friends f ON u.id = f.user2_id INNER JOIN responses r ON r.user_id = u.id WHERE r.event_id = ${event_id} AND r.answer = "going" AND f.user1_id = ${user}`)
             if (eventInfo.length > 0) {
                 console.log(eventInfo)
-                const {title, location, description, created_by, start_time, end_time, status, people_going} = eventInfo[0];
-                res.status(200).json({title, location, description, created_by, start_time, end_time, status, people_going, friends_going: friendsInfo.map(friend => ({username: friend.username, fullname: friend.fullname}))})
+                const { title, location, description, created_by, start_time, end_time, status, people_going } = eventInfo[0];
+                res.status(200).json({ title, location, description, created_by, start_time, end_time, status, people_going, friends_going: friendsInfo.map(friend => ({ username: friend.username, fullname: friend.fullname })) })
             }
             else {
                 res.status(404).json({
-                    success:false, errors: [
+                    success: false, errors: [
                         {
                             "value": event_id,
                             "msg": "Event not found.",
