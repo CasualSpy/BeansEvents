@@ -74,7 +74,7 @@ router.post('/create', [
                     ${description ? `, ?` : ""}
                     ${is_private ? ", TRUE" : ""}
                 );`, [title, user, start_time, end_time, location, description, is_private]);
-            res.status().json({ success: true })
+            res.status(201).json({ success: true })
         }
         catch (error) {
             console.log(error);
