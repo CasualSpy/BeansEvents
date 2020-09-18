@@ -145,10 +145,10 @@ router.post('/login', [
             const hash = shajs('sha256').update(password + user.password_salt).digest('hex');
             if (hash === user.password_hash) {
                 req.session.userId = user.id;
-                res.status(201).json({ success: true });
+                res.status(200).json({ success: true });
             }
             else {
-                res.status(403).json({
+                res.status(401).json({
                     success: false, errors: [{
                         "value": "",
                         "msg": "Invalid credentials",
@@ -159,7 +159,7 @@ router.post('/login', [
             }
         }
         else {
-            res.status(403).json({
+            res.status(401).json({
                 success: false, errors: [{
                     "value": "",
                     "msg": "Invalid credentials",
