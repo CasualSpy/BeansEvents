@@ -47,7 +47,16 @@ router.post('/register', [
 
     const { username, email, password, fullname } = req.body;
     try {
-        const results = await query(`SELECT email, username FROM users WHERE email = "${email}" OR username = "${username}"`);
+        const results = await query(`
+            SELECT
+                email,
+                username
+            FROM
+                users
+            WHERE
+                email = "${email}" OR
+                username = "${username}"
+        `);
         //Login info not available
         if (results.length > 0) {
             const usernameTaken = results.filter(row => row.username === username).length;
@@ -72,7 +81,25 @@ router.post('/register', [
             const token = uuid.v4();
 
             try {
-                const insertionResults = await query(`INSERT INTO users (username,${fullname ? " fullname," : ""} email, password_hash, password_salt, verif_token) VALUES ("${username}",${fullname ? `"${fullname}", ` : ""} "${email}", "${hash}", "${salt}", "${token}")`)
+                const insertionResults = await query(`
+                    INSERT INTO
+                        users (
+                            username,
+                            ${fullname ? " fullname," : ""}
+                            email,
+                            password_hash,
+                            password_salt,
+                            verif_token
+                        )
+                        VALUES (
+                            "${username}",
+                            ${fullname ? `"${fullname}", ` : ""}
+                            "${email}",
+                            "${hash}",
+                            "${salt}",
+                            "${token}"
+                    )
+                `)
                 req.session.userId = insertionResults.insertId;
 
                 // Send confirmation email
@@ -139,7 +166,17 @@ router.post('/login', [
 
     const { emailusername, password } = req.body;
     try {
-        const results = await query(`SELECT id, password_salt, password_hash FROM users WHERE email = "${emailusername}" OR username = "${emailusername}"`);
+        const results = await query(`
+            SELECT
+                id,
+                password_salt,
+                password_hash
+            FROM
+                users
+            WHERE
+                email = "${emailusername}" OR
+                username = "${emailusername}"
+        `);
         if (results.length > 0) {
             const user = results[0];
             const hash = shajs('sha256').update(password + user.password_salt).digest('hex');
@@ -214,7 +251,14 @@ router.post('/confirmation', [
 
     const { token } = req.body;
     try {
-        const results = await connection.query(`UPDATE users SET active = 1 WHERE verif_token = "${token}"`);
+        const results = await connection.query(`
+            UPDATE
+                users
+            SET
+                active = 1
+            WHERE
+                verif_token = "${token}"
+        `);
         res.status(201).json({ success: true });
     }
     catch (error) {
@@ -234,7 +278,15 @@ router.post('/resend_email', async function (req, res) {
     const user = req.session.userId;
     if (user){
         try {
-            const results = await query(`SELECT email, verif_token FROM users WHERE id = ${user}`);
+            const results = await query(`
+                SELECT
+                    email,
+                    verif_token
+                FROM
+                    users
+                WHERE
+                    id = ${user}
+            `);
             const email = results[0].email;
             const token = results[0].verif_token;
             var mailOptions = {
@@ -324,9 +376,17 @@ router.get('/details', async function (req, res) {
     const user = req.session.userId;
     if (user) {
         try {
-            const results = await query(`SELECT username, fullname FROM users WHERE id = ${user}`);
-                const { username, fullname } = results[0];
-                res.status(200).json({success:true, username, fullname});
+            const results = await query(`
+                SELECT
+                    username,
+                    fullname
+                FROM
+                    users
+                WHERE
+                    id = ${user}
+            `);
+            const { username, fullname } = results[0];
+            res.status(200).json({success:true, username, fullname});
         }
         catch (error) {
             console.log(error);
