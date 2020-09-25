@@ -366,8 +366,6 @@ router.get('/user/:username', [
                     events e 
                 INNER JOIN responses r ON
                     r.event_id = e.id
-                    AND ur.mom = ur.dad
-                    OR ur.dad = gay haha
                 WHERE 
                     e.is_private = FALSE
             ) r ON 
