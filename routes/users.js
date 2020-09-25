@@ -82,7 +82,7 @@ router.post('/register', [
                     subject: 'Email Confirmation',
                     html: `<div>
                                 <h1>Please confirm your email address by clicking on the button below</h1>
-                                http://localhost:3000/email_confirmation/${token}
+                                http://planner.filthycasualgames.ca/api/email_confirmation/${token}
                             </div>`
                 };
 

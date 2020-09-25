@@ -102,16 +102,6 @@ router.get('/going', async function (req, res) {
     const user = req.session.userId;
     if (user) {
         try {
-            //const results = await query( `SELECT e.id AS event_id, e.title, e.location, e.start_time, fr.friend_id, fr.username AS friend_username, fr.fullname AS friend_fullname FROM events e INNER JOIN responses r ON r.event_id = e.id INNER JOIN users u ON u.id = r.user_id LEFT JOIN (SELECT f.user2_id AS friend_id, fu.username, fu.fullname, r.event_id FROM friends f INNER JOIN responses r ON r.user_id = f.user2_id INNER JOIN users u ON u.id = f.user1_id INNER JOIN users fu ON fu.id = f.user2_id WHERE u.id = ${user} AND r.answer = "going") fr ON fr.event_id = e.id WHERE u.id = ${user};`);
-            //const temp = collect(results).groupBy('event_id')
-            //let ret = []
-            //for (event in temp.all()){
-                //const {event_id, title, location, start_time} = temp.all()[event].items[0]
-                //const friends = temp.all()[event].items.map(item => ({username: item.friend_username, fullname: item.friend_fullname}))
-
-                //ret.push({event_id, title, location, start_time, friends: friends[0].username ? friends : []})
-            //}
-
             const responses = await query(`SELECT e.id event_id, e.title, e.location, e.start_time FROM events e INNER JOIN responses r ON e.id = r.event_id WHERE r.user_id = ${user} AND r.answer = "going"`);
             const friends_responses = await query(`SELECT uf.username, uf.fullname, r.event_id FROM friends f INNER JOIN responses r ON r.user_id = f.user2_id INNER JOIN users u ON f.user1_id = u.id INNER JOIN users uf ON f.user2_id = uf.id WHERE u.id = ${user} AND r.answer = "going"`)
             const ret = responses.map(response => ({
