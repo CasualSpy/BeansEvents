@@ -6,9 +6,9 @@ var connection = mysql.createConnection({
     database: 'event_planner'
 });
 
-async function query(query) {
+async function query(query, values) {
     return new Promise((resolve, reject) => {
-        connection.query(query, (error, results) => {
+        connection.query(query, values, (error, results) => {
             if (error)
                 reject(error);
             else
