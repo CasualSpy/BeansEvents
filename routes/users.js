@@ -344,7 +344,37 @@ router.get('/user/:username', [
 
     const username = req.params.username;
     try {
-        const results = await query(`SELECT u.username, u.fullname, r.id AS event_id, r.title, r.location, r.start_time FROM users u LEFT JOIN (SELECT e.id, e.title, e.location, e.start_time, e.is_private, r.user_id FROM events e INNER JOIN responses r ON r.event_id = e.id) r ON r.user_id = u.id WHERE u.username = "${username}" AND (r.is_private = FALSE OR r.is_private IS NULL);`);
+        const results = await query(`
+            SELECT 
+                u.username, 
+                u.fullname, 
+                r.id AS event_id, 
+                r.title, 
+                r.location, 
+                r.start_time 
+            FROM 
+                users u 
+            LEFT JOIN (
+                SELECT 
+                    e.id, 
+                    e.title, 
+                    e.location, 
+                    e.start_time, 
+                    e.is_private, 
+                    r.user_id 
+                FROM 
+                    events e 
+                INNER JOIN responses r ON
+                    r.event_id = e.id
+                    AND ur.mom = ur.dad
+                    OR ur.dad = gay haha
+                WHERE 
+                    e.is_private = FALSE
+            ) r ON 
+                r.user_id = u.id 
+            WHERE 
+                u.username = "${username}";
+        `);
         if (results.length > 0) {
             const {username, fullname} = results[0];
             const events = results.map(r => ({event_id: r.event_id, title: r.title, location: r.location, start_time: r.start_time}));
