@@ -180,7 +180,6 @@ router.get('/event/:event_id', [
             const eventInfo = await query(queryStr)
             const friendsInfo = await query(`SELECT u.username, u.fullname FROM users u INNER JOIN friends f ON u.id = f.user2_id INNER JOIN responses r ON r.user_id = u.id WHERE r.event_id = ${event_id} AND r.answer = "going" AND f.user1_id = ${user}`)
             if (eventInfo.length > 0) {
-                console.log(eventInfo)
                 const { title, location, description, created_by, start_time, end_time, status, people_going } = eventInfo[0];
                 res.status(200).json({ title, location, description, created_by, start_time, end_time, status, people_going, friends_going: friendsInfo.map(friend => ({ username: friend.username, fullname: friend.fullname })) })
             }
